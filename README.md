@@ -1,6 +1,6 @@
 # Colissimo::Scraper
 
-TODO: Write a gem description
+Scraps Colissimo tracking page for tracking information
 
 ## Installation
 
@@ -18,7 +18,9 @@ Or install it yourself as:
 
 ## Usage
 
-TODO: Write usage instructions here
+  ColissimoScraper.get_tracking_list(..number..).tracking_list 
+or
+  ColissimoScraper.get_tracking_list(..number).last
 
 ## Contributing
 

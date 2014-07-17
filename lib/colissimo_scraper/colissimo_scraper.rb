@@ -28,25 +28,22 @@ module ColissimoScraper
     RestClient::Resource.new('http://www.colissimo.fr', :headers => HTTP_HEADERS,  :timeout => TIMEOUT, :open_timeout => TIMEOUT)
   end
 
-  def self.get_status(parcel_number)
+  def self.get_tracking_list(parcel_number)
   
     unless /[A-Za-z0-9]{13}/ =~ parcel_number 
       fail ArgumentError, "Invalid parcel number: #{parcel_number}"
     end
 
-    response = colissimo_website['/portail_colissimo/suivreResultatStubs.do'].post({ :parcelnumber => parcel_number, :language => 'en_GB' })
+    http_response = get_page_response(parcel_number)
+    colissimo_response = ColissimoScraper::Response.new(http_response)
 
-    colissimo_response = ColissimoScraper::Response.new(response.to_str)
-
-    ImageHashCheck.new(colissimo_response, response).decide_status
-
-    colissimo_response
+    ImageHashTracker.new(colissimo_response, http_response)
   end
 
-  private
+  private 
 
-  def list_image_urls(page_text, &block)
-
+  def self.get_page_response(parcel_number)
+    colissimo_website['/portail_colissimo/suivreResultatStubs.do'].post({ :parcelnumber => parcel_number, :language => 'en_GB' })
   end
 
 end

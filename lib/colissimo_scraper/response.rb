@@ -36,10 +36,5 @@ module ColissimoScraper
         end
       end
     end
-
-    def empty?
-      @html.xpath
-    end
-
   end
 end
