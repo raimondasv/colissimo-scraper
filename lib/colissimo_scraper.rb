@@ -14,6 +14,9 @@ module ColissimoScraper
 
   TIMEOUT = 5
 
+  @@open_timeout = 10
+  @@timeout = 10
+
   # POST /portail_colissimo/suivreResultatStubs.do HTTP/1.1
   # Host: www.colissimo.fr
   # Connection: keep-alive
@@ -28,13 +31,33 @@ module ColissimoScraper
   # Accept-Language: en-US,en;q=0.8,lt;q=0.6
   # Cookie: JSESSIONID=46002B1A829964F4261812A97E76E5FD.tc-webclp-NODE1
 
+  def self.timeout
+    @@timeout
+  end
+
+  def self.timoeout=(timeout)
+    @@timeout = timeout
+  end
+
+  def self.open_timeout
+    @@open_timeout
+  end
+
+  def self.open_timeout=(open_timeout)
+    @@open_timeout = open_timeout
+  end
+
   def self.colissimo_website
-    RestClient::Resource.new('http://www.colissimo.fr', :headers => HTTP_HEADERS,  :timeout => TIMEOUT, :open_timeout => TIMEOUT)
+    RestClient::Resource.new('http://www.colissimo.fr', :headers => HTTP_HEADERS,  :timeout => timeout, :open_timeout => open_timeout)
+  end
+
+  def self.validate_tracking_number(parcel_number)
+    /\A[A-Za-z0-9]{13}\z/ =~ parcel_number  
   end
 
   def self.get_tracking_list(parcel_number)
   
-    unless /\A[A-Za-z0-9]{13}\z/ =~ parcel_number 
+    unless validate_tracking_number(parcel_number)
       fail ArgumentError, "Invalid parcel number: #{parcel_number}"
     end
 
