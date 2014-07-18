@@ -4,7 +4,7 @@ $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
 require 'colissimo_scraper/version'
 
 Gem::Specification.new do |spec|
-  spec.name          = "colissimo-scraper"
+  spec.name          = "colissimo_scraper"
   spec.version       = ColissimoScraper::VERSION
   spec.authors       = ["Raimondas Valickas"]
   spec.email         = ["raimondas@vinted.com"]
