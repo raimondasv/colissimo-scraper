@@ -34,7 +34,7 @@ module ColissimoScraper
 
   def self.get_tracking_list(parcel_number)
   
-    unless /[A-Za-z0-9]{13}/ =~ parcel_number 
+    unless /\A[A-Za-z0-9]{13}\z/ =~ parcel_number 
       fail ArgumentError, "Invalid parcel number: #{parcel_number}"
     end
 
