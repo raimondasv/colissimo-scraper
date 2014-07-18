@@ -1,5 +1,9 @@
 require 'rest_client'
 
+require 'colissimo_scraper/status'
+require 'colissimo_scraper/response'
+require 'colissimo_scraper/image_hash_tracker'
+
 module ColissimoScraper
 
   HTTP_HEADERS = {
