@@ -2,6 +2,7 @@ require 'rest_client'
 
 require 'colissimo_scraper/status'
 require 'colissimo_scraper/page_parser'
+require 'colissimo_scraper/scraping_error'
 require 'colissimo_scraper/image_hash_tracker'
 
 module ColissimoScraper
@@ -53,16 +54,19 @@ module ColissimoScraper
     /\A[A-Za-z0-9]{13}\z/ =~ parcel_number
   end
 
-  def self.get_tracking_list(parcel_number)
+  def self.fetch_tracking_list(parcel_number)
 
     unless valid_tracking_number?(parcel_number)
       fail ArgumentError, "Invalid parcel number: #{parcel_number}"
     end
 
-    http_response = get_page_response(parcel_number)
-    colissimo_response = ColissimoScraper::PageParser.new(http_response)
+    begin
+      http_response = get_page_response(parcel_number)
 
-    ImageHashTracker.new(colissimo_response, http_response)
+      ImageHashTracker.new(ColissimoScraper::PageParser.new(http_response.to_str), http_response)
+    rescue RestClient::Exception => e
+      raise ColissimoScraper::ScrapingError, "Unable to fetch Colissimo web page"
+    end
   end
 
   private

@@ -2,10 +2,10 @@ require 'spec_helper'
 
 describe ColissimoScraper do
 
-  describe ".get_tracking_list" do
+  describe "#fetch_tracking_list" do
 
     let(:bytes) { File.binread(File.dirname(__FILE__) + '/assets/' + file) }
-    let(:tracker) { ColissimoScraper.get_tracking_list(parcel_number) }
+    let(:tracker) { ColissimoScraper.fetch_tracking_list(parcel_number) }
 
     xcontext "call actual service" do
 
@@ -67,8 +67,6 @@ describe ColissimoScraper do
         expect_any_instance_of(ColissimoScraper::PageParser).to receive(:fetch_images).and_return(
           [ {src: 'fake_url', field: ColissimoScraper::DESCR_FIELD_URL, index: 1} ]
         )
-        # expect_any_instance_of(ColissimoScraper::Response).to receive(:each_image_url).and_yield(
-        #     'fake_url', ColissimoScraper::DESCR_FIELD_URL, 1)
         expect_any_instance_of(ColissimoScraper::ImageHashTracker).to receive(:get_image).and_return(bytes)
       end
 
@@ -141,12 +139,20 @@ describe ColissimoScraper do
       end
 
       context "and expect old tracking number response" do
-        let(:file) { 'old_tracking_number.html'}
+        let(:file) { 'old_tracking_number.html' }
 
         it "should contain old tracking number and be empty" do
           expect(page_parser.fetch_images).to be_empty
           expect(page_parser.old_tracking_number?).to be(true)
         end
+      end
+    end
+
+    context "should react to exception" do
+      before { expect(ColissimoScraper).to receive(:get_page_response).and_raise(RestClient::Exception, "Oops") }
+
+      it "and wrap the exception" do
+        expect{ ColissimoScraper.fetch_tracking_list('8J00289215218') }.to raise_error(ColissimoScraper::ScrapingError)
       end
     end
   end

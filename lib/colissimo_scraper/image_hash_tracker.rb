@@ -20,19 +20,19 @@ module ColissimoScraper
 
   class ImageHashTracker
 
-    def initialize(page_parser, http_response)
-
+    def initialize(page_parser, base_page_http_response)
       page_parser.fetch_images.each do |image|
 
         # For image hash tracker - preload only first image, thats why index == 1
         if image[:field] == DESCR_FIELD_URL && image[:index] == 1
-          raw_image = get_image(image[:src], http_response)
+          raw_image = get_image(image[:src], base_page_http_response)
 
           hash = Digest::SHA1.hexdigest(raw_image)
           status = IMAGE_SHA1_HASHES.fetch(hash, ColissimoScraper::Status::UNRECOGNISED)
 
           # No location or date information in this type of tracker
           tracking_list << Status.new(nil, nil, status)
+
           break
         end
       end
@@ -48,8 +48,8 @@ module ColissimoScraper
 
     private
 
-    def get_image(url, http_response)
-      ColissimoScraper.colissimo_website['/portail_colissimo/' + url].get(cookies: http_response.cookies)
+    def get_image(url, base_page_http_response)
+      ColissimoScraper.colissimo_website['/portail_colissimo/' + url].get(cookies: base_page_http_response.cookies)
     end
 
   end
