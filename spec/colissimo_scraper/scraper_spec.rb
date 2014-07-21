@@ -136,15 +136,29 @@ describe ColissimoScraper do
             idx += 1
           end
         end
+
+        it "should have statuses" do
+          expect(page_parser.contains_statuses?).to be(true)
+        end
       end
 
-      context "and expect old tracking number response" do
-        let(:file) { 'old_tracking_number.html' }
-
-        it "should contain old tracking number and be empty" do
-          expect(page_parser.fetch_images).to be_empty
-          expect(page_parser.old_tracking_number?).to be(true)
+      context "and expect response with errors" do
+        shared_examples 'no statuses' do
+          it {
+            expect(page_parser.fetch_images).to be_empty
+            expect(page_parser.contains_statuses?).to be(false)
+          }
         end
+
+        let(:file) { 'old_tracking_number.html' }
+        it_behaves_like 'no statuses'
+
+
+        let(:file) { 'unknown_number.html' }
+        it_behaves_like 'no statuses'
+
+        let(:file) { 'invalid_number.html' }
+        it_behaves_like 'no statuses'
       end
     end
 

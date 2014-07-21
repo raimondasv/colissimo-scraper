@@ -30,17 +30,14 @@ module ColissimoScraper
       @images.sort! { |a, b| a[:index] <=> b[:index] }
     end
 
-    def contains_images
-      @images && !images.empty?
+    def contains_statuses?
+      error_text.empty?
     end
 
-    def images
-      @images
-    end
+    private
 
-    def old_tracking_number?
-      error = @html.xpath("//div[@id='resultatSuivreDiv']/div[@class='error']/text()")
-      error && error.text.include?('Tracking number older than 30 days')
+    def error_text
+      @html.xpath("//div[@id='resultatSuivreDiv']/div[@class='error']/text()").text
     end
   end
 end
