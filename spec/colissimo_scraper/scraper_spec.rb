@@ -7,10 +7,10 @@ describe ColissimoScraper do
     let(:bytes) { File.binread(File.dirname(__FILE__) + '/assets/' + file) }
     let(:tracker) { ColissimoScraper.get_tracking_list(parcel_number) }
 
-    context "call actual service" do
+    xcontext "call actual service" do
 
       context "for valid number" do
-        let(:parcel_number) { '8J00288349136' }
+        let(:parcel_number) { '8J00289215218' }
         subject (:track_list) { tracker.tracking_list }
 
         it "should be delivered" do
@@ -43,7 +43,7 @@ describe ColissimoScraper do
     context "invalid input" do
 
       let(:parcel_number) { 'aaa' }
-      it "should raise error on letters" do 
+      it "should raise error on letters" do
         expect{ tracker }.to raise_error(ArgumentError)
       end
 
@@ -53,75 +53,100 @@ describe ColissimoScraper do
       end
 
       let(:parcel_number) { nil }
-      it "should raise error on nil" do        
+      it "should raise error on nil" do
         expect{ tracker }.to raise_error(ArgumentError)
       end
     end
 
-    context "mocked states" do
+    context "with mocked" do
       let(:parcel_number) { '8J00111111111'}
 
       before do
         expect(ColissimoScraper).to receive(:get_page_response).with('8J00111111111').and_return('fake_content')
-        expect_any_instance_of(ColissimoScraper::Response).to receive(:each_image_url).and_yield(
-            'fake_url', ColissimoScraper::DESCR_FIELD_URL, 1)
+
+        expect_any_instance_of(ColissimoScraper::PageParser).to receive(:fetch_images).and_return(
+          [ {src: 'fake_url', field: ColissimoScraper::DESCR_FIELD_URL, index: 1} ]
+        )
+        # expect_any_instance_of(ColissimoScraper::Response).to receive(:each_image_url).and_yield(
+        #     'fake_url', ColissimoScraper::DESCR_FIELD_URL, 1)
         expect_any_instance_of(ColissimoScraper::ImageHashTracker).to receive(:get_image).and_return(bytes)
       end
 
-      context "mock unrecognized state" do
+      context "unrecognized state" do
         let(:bytes) { 'unrecognized_bytes '}
         subject(:track_list) { tracker.tracking_list }
         it { expect { |b| track_list.map(&:status).each(&b) }.to yield_successive_args(ColissimoScraper::Status::UNRECOGNISED) }
       end
 
-      context "mock 'Your parcel was delivered to the caretaker or frontdesk' state" do
+      context "'Your parcel was delivered to the caretaker or frontdesk' state" do
         let(:file) { 'frontdesk.png'  }
         subject(:track_list) { tracker.tracking_list }
         it { expect { |b| track_list.map(&:status).each(&b) }.to yield_successive_args(ColissimoScraper::Status::DELIVERED) }
       end
 
-      context "mock 'Your parcel is ready for delivery' state" do
+      context "'Your parcel is ready for delivery' state" do
         let(:file) { 'delivery.png'  }
         subject(:track_list) { tracker.tracking_list }
         it { expect { |b| track_list.map(&:status).each(&b) }.to yield_successive_args(ColissimoScraper::Status::ON_DELIVERY) }
       end
 
-      context "mock 'Your parcel has arrived at its delivery location' state" do
+      context "'Your parcel has arrived at its delivery location' state" do
         let(:file) { 'location.png'  }
         subject(:track_list) { tracker.tracking_list }
         it { expect { |b| track_list.map(&:status).each(&b) }.to yield_successive_args(ColissimoScraper::Status::IN_TRANSIT) }
       end
 
-      context "mock 'La Poste is handling your parcel. It is currently being routed.' state" do
+      context "'La Poste is handling your parcel. It is currently being routed.' state" do
         let(:file) { 'routed.png'  }
         subject(:track_list) { tracker.tracking_list }
         it { expect { |b| track_list.map(&:status).each(&b) }.to yield_successive_args(ColissimoScraper::Status::IN_TRANSIT) }
       end
 
-      context "mock 'You parcel has been dropped-off at the shipping post office' state" do
+      context "'You parcel has been dropped-off at the shipping post office' state" do
         let(:file) { 'dropped.png'  }
         subject(:track_list) { tracker.tracking_list }
         it { expect { |b| track_list.map(&:status).each(&b) }.to yield_successive_args(ColissimoScraper::Status::IN_TRANSIT) }
       end
 
-      context "mock 'Your parcel is ready to be shipped. It has not been taken on by La Poste yet.' state" do
+      context "'Your parcel is ready to be shipped. It has not been taken on by La Poste yet.' state" do
         let(:file) { 'shipped.png'  }
         subject(:track_list) { tracker.tracking_list }
         it { expect { |b| track_list.map(&:status).each(&b) }.to yield_successive_args(ColissimoScraper::Status::IN_TRANSIT) }
       end
     end
 
-    context "mock parent page responses" do
+    context "mock base page responses" do
 
-      let(:file) { 'delivered_request.html' }
-      let(:resp) { ColissimoScraper::Response.new(bytes) }
-      
-      context "and expect image url" do
-        let(:url_array) { 
-          (Enumerator.new { |enum| resp.each_image_url { |url, type, index| enum << url } }).to_a
-        }
+      let(:page_parser) { ColissimoScraper::PageParser.new(bytes) }
 
-        it { expect(url_array.size).to be(21) }
+      context "and expect usual response" do
+        let(:file) { 'delivered_request.html' }
+        subject(:images) { page_parser.fetch_images }
+
+        it "with filled image array" do
+          expect(images.size).to be(21)
+
+          idx = 1
+          images.each_slice(3) do |sample|
+            sample.each do |item|
+              expect(item[:index]).to be(idx)
+              expect(item[:field]).to eq(ColissimoScraper::DATE_FIELD_URL) |
+                eq(ColissimoScraper::SITE_FIELD_URL) |
+                eq(ColissimoScraper::DESCR_FIELD_URL)
+              expect(item[:src]).not_to be_empty
+            end
+            idx += 1
+          end
+        end
+      end
+
+      context "and expect old tracking number response" do
+        let(:file) { 'old_tracking_number.html'}
+
+        it "should contain old tracking number and be empty" do
+          expect(page_parser.fetch_images).to be_empty
+          expect(page_parser.old_tracking_number?).to be(true)
+        end
       end
     end
   end

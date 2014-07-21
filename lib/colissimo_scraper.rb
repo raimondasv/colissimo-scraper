@@ -1,7 +1,7 @@
 require 'rest_client'
 
 require 'colissimo_scraper/status'
-require 'colissimo_scraper/response'
+require 'colissimo_scraper/page_parser'
 require 'colissimo_scraper/image_hash_tracker'
 
 module ColissimoScraper
@@ -11,8 +11,6 @@ module ColissimoScraper
     :referer => 'http://www.colissimo.fr/portail_colissimo/suivre.do?language=en_GB',
     :user_agent => 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_4) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36'
   }
-
-  TIMEOUT = 5
 
   @@open_timeout = 10
   @@timeout = 10
@@ -48,29 +46,29 @@ module ColissimoScraper
   end
 
   def self.colissimo_website
-    RestClient::Resource.new('http://www.colissimo.fr', :headers => HTTP_HEADERS,  :timeout => timeout, :open_timeout => open_timeout)
+    RestClient::Resource.new('http://www.colissimo.fr', headers: HTTP_HEADERS, timeout: timeout, open_timeout:open_timeout)
   end
 
-  def self.validate_tracking_number(parcel_number)
-    /\A[A-Za-z0-9]{13}\z/ =~ parcel_number  
+  def self.valid_tracking_number?(parcel_number)
+    /\A[A-Za-z0-9]{13}\z/ =~ parcel_number
   end
 
   def self.get_tracking_list(parcel_number)
-  
-    unless validate_tracking_number(parcel_number)
+
+    unless valid_tracking_number?(parcel_number)
       fail ArgumentError, "Invalid parcel number: #{parcel_number}"
     end
 
     http_response = get_page_response(parcel_number)
-    colissimo_response = ColissimoScraper::Response.new(http_response)
+    colissimo_response = ColissimoScraper::PageParser.new(http_response)
 
     ImageHashTracker.new(colissimo_response, http_response)
   end
 
-  private 
+  private
 
   def self.get_page_response(parcel_number)
-    colissimo_website['/portail_colissimo/suivreResultatStubs.do'].post({ :parcelnumber => parcel_number, :language => 'en_GB' })
+    colissimo_website['/portail_colissimo/suivreResultatStubs.do'].post(parcelnumber: parcel_number, language: 'en_GB')
   end
 
 end
